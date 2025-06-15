@@ -1,0 +1,3 @@
+# requests and PIL handler
+requests 
+Pillow
