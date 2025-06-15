@@ -1,0 +1,69 @@
+name: CI/CD
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with: { python-version: '3.12' }
+
+      - name: Install & test Lambda
+        run: |
+          pip install -r lambda/requirements.txt pytest
+          pytest lambda/tests
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with: { terraform_version: '1.5.6' }
+
+      - name: Terraform fmt & validate
+        run: |
+          cd terraform
+          terraform fmt -check
+          terraform validate
+
+  deploy:
+    needs: validate
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Configure AWS
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:           ${{ secrets.AWS_REGION }}
+
+      - name: Terraform Init & Apply
+        uses: hashicorp/setup-terraform@v2
+        with: { terraform_version: '1.5.6' }
+      - run: |
+          cd terraform
+          terraform init -input=false
+          terraform apply -auto-approve
+
+      - name: Package Lambda
+        run: |
+          cd lambda
+          zip -r ../terraform/lambda.zip .
+
+      - name: Update Lambda code
+        run: |
+          aws lambda update-function-code \
+            --function-name image-resizer \
+            --zip-file fileb://terraform/lambda.zip
+
+      - name: Smoke Test
+        run: |
+          URL=$(terraform output -raw api_endpoint -state=terraform/terraform.tfstate)
+          curl "${URL}?url=https://via.placeholder.com/150&width=50&height=50" --fail --silent
