@@ -14,7 +14,7 @@ A serverless Image Resizer API:
 
 - **IaC**: Terraform (AWS provider)
 - **Serverless**: AWS Lambda (Python 3.9)
-- **API**: API Gateway
+- **API**: API gateway
 - **Libs**: Pillow, requests
 - **CI/CD**: GitHub Actions
 - **Tests**: pytest

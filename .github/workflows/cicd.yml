@@ -67,10 +67,19 @@ jobs:
           terraform init -input=false
           terraform apply -auto-approve
 
-      - name: Package Lambda
+      - name: Build Lambda package
+        working-directory: lambda
         run: |
-          cd lambda
-          zip -r ../terraform/lambda.zip .
+          # 1) create a temp folder for dependencies
+          mkdir -p build
+          # 2) install your deps into it
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt -t build
+          # 3) copy your function code next to them
+          cp handler.py build/
+          # 4) zip everything into the terraform folder
+          cd build
+          zip -r ../../terraform/lambda.zip .
 
       - name: Update Lambda code
         run: |

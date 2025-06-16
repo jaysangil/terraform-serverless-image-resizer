@@ -14,3 +14,7 @@ override.tf.json
 
 # Archives
 lambda.zip
+
+# Optionals
+.env
+*.log
