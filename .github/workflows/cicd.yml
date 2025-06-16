@@ -5,27 +5,35 @@ on:
     branches:
       - staging
   push:
-    branches: 
+    branches:
       - staging
 
 jobs:
   validate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
 
       - name: Set up Python
         uses: actions/setup-python@v4
-        with: { python-version: '3.12' }
+        with:
+          python-version: '3.12'
 
       - name: Install & test Lambda
         run: |
           pip install -r lambda/requirements.txt pytest
           pytest lambda/tests
 
-      - name: Setup Terraform
+      - name: Setup Terraform CLI
         uses: hashicorp/setup-terraform@v2
-        with: { terraform_version: '1.5.6' }
+        with:
+          terraform_version: '1.5.6'
+
+      - name: Terraform Init
+        run: |
+          cd terraform
+          terraform init -input=false
 
       - name: Terraform fmt & validate
         run: |
@@ -38,7 +46,8 @@ jobs:
     if: github.ref == 'refs/heads/staging'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
 
       - name: Configure AWS
         uses: aws-actions/configure-aws-credentials@v2
@@ -47,10 +56,13 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region:           ${{ secrets.AWS_REGION }}
 
-      - name: Terraform Init & Apply
+      - name: Setup Terraform CLI
         uses: hashicorp/setup-terraform@v2
-        with: { terraform_version: '1.5.6' }
-      - run: |
+        with:
+          terraform_version: '1.5.6'
+
+      - name: Terraform Init & Apply
+        run: |
           cd terraform
           terraform init -input=false
           terraform apply -auto-approve
