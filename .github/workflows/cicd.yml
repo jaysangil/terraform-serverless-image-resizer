@@ -2,8 +2,11 @@ name: CI/CD
 
 on:
   pull_request:
+    branches:
+      - staging
   push:
-    branches: [main]
+    branches: 
+      - staging
 
 jobs:
   validate:
@@ -32,7 +35,7 @@ jobs:
 
   deploy:
     needs: validate
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/staging'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
